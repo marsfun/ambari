@@ -41,40 +41,55 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
   },
   hdfsConfig: {
     version: 'nameNodeComponent.host_components[0].metrics.dfs.namenode.Version',
-    active_name_node_id: 'active_name_node_id',
-    standby_name_node_id: 'standby_name_node_id',
-    standby_name_node2_id: 'standby_name_node2_id',
     active_name_nodes: 'active_name_nodes',
     standby_name_nodes: 'standby_name_nodes',
     journal_nodes: 'journal_nodes',
     name_node_id: 'name_node_id',
     sname_node_id: 'sname_node_id',
     metrics_not_available: 'metrics_not_available',
-    name_node_start_time: 'nameNodeComponent.host_components[0].metrics.runtime.StartTime',
-    jvm_memory_heap_used: 'nameNodeComponent.host_components[0].metrics.jvm.HeapMemoryUsed',
-    jvm_memory_heap_max: 'nameNodeComponent.host_components[0].metrics.jvm.HeapMemoryMax',
+    name_node_start_time_values: 'name_node_start_time_values',
+    jvm_memory_heap_used_values: 'jvm_memory_heap_used_values',
+    jvm_memory_heap_max_values: 'jvm_memory_heap_max_values',
     live_data_nodes: 'live_data_nodes',
     dead_data_nodes: 'dead_data_nodes',
     decommission_data_nodes: 'decommission_data_nodes',
-    capacity_used: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.CapacityUsed',
-    capacity_total: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.CapacityTotal',
-    capacity_remaining: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.CapacityRemaining',
-    capacity_non_dfs_used: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.CapacityNonDFSUsed',
-    dfs_total_blocks: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.BlocksTotal',
-    dfs_corrupt_blocks: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.CorruptBlocks',
-    dfs_missing_blocks: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.MissingBlocks',
-    dfs_under_replicated_blocks: 'nameNodeComponent.host_components[0].metrics.dfs.FSNamesystem.UnderReplicatedBlocks',
-    dfs_total_files: 'nameNodeComponent.host_components[0].metrics.dfs.namenode.TotalFiles',
-    upgrade_status: 'nameNodeComponent.host_components[0].metrics.dfs.namenode.UpgradeFinalized',
-    safe_mode_status: 'nameNodeComponent.host_components[0].metrics.dfs.namenode.Safemode',
-    name_node_cpu: 'nameNodeComponent.host_components[0].metrics.cpu.cpu_wio',
-    name_node_rpc: 'nameNodeComponent.host_components[0].metrics.rpc.client.RpcQueueTime_avg_time',
+    capacity_used_values: 'capacity_used_values',
+    capacity_total_values: 'capacity_total_values',
+    capacity_remaining_values: 'capacity_remaining_values',
+    capacity_non_dfs_used_values: 'capacity_non_dfs_used_values',
+    dfs_total_blocks_values: 'dfs_total_blocks_values',
+    dfs_corrupt_blocks_values: 'dfs_corrupt_blocks_values',
+    dfs_missing_blocks_values: 'dfs_missing_blocks_values',
+    dfs_under_replicated_blocks_values: 'dfs_under_replicated_blocks_values',
+    dfs_total_files_values: 'dfs_total_files_values',
+    work_status_values: 'work_status_values',
+    upgrade_status_values: 'upgrade_status_values',
+    safe_mode_status_values: 'safe_mode_status_values',
+    name_node_rpc_values: 'name_node_rpc_values',
     data_nodes_started: 'data_nodes_started',
     data_nodes_installed: 'data_nodes_installed',
     data_nodes_total: 'data_nodes_total',
     nfs_gateways_started: 'nfs_gateways_started',
     nfs_gateways_installed: 'nfs_gateways_installed',
     nfs_gateways_total: 'nfs_gateways_total'
+  },
+  activeNameNodeConfig: {
+    name_node_start_time_values: 'metrics.runtime.StartTime',
+    jvm_memory_heap_used_values: 'metrics.jvm.HeapMemoryUsed',
+    capacity_used_values: 'metrics.dfs.FSNamesystem.CapacityUsed',
+    capacity_total_values: 'metrics.dfs.FSNamesystem.CapacityTotal',
+    capacity_remaining_values: 'metrics.dfs.FSNamesystem.CapacityRemaining',
+    capacity_non_dfs_used_values: 'metrics.dfs.FSNamesystem.CapacityNonDFSUsed',
+    jvm_memory_heap_max_values: 'metrics.jvm.HeapMemoryMax',
+    dfs_total_blocks_values: 'metrics.dfs.FSNamesystem.BlocksTotal',
+    dfs_corrupt_blocks_values: 'metrics.dfs.FSNamesystem.CorruptBlocks',
+    dfs_missing_blocks_values: 'metrics.dfs.FSNamesystem.MissingBlocks',
+    dfs_under_replicated_blocks_values: 'metrics.dfs.FSNamesystem.UnderReplicatedBlocks',
+    dfs_total_files_values: 'metrics.dfs.namenode.TotalFiles',
+    work_status_values: 'HostRoles.state',
+    upgrade_status_values: 'metrics.dfs.namenode.UpgradeFinalized',
+    safe_mode_status_values: 'metrics.dfs.namenode.Safemode',
+    name_node_rpc_values: 'metrics.rpc.client.RpcQueueTime_avg_time',
   },
   onefsConfig: {
     metrics_not_available: 'metrics_not_available',
@@ -184,7 +199,7 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
     ha_status: 'HostRoles.ha_state',
     display_name_advanced: 'display_name_advanced',
     admin_state: 'HostRoles.desired_admin_state',
-    ha_name_space: 'metrics.dfs.namenode.ClusterId'
+    cluster_id_value: 'metrics.dfs.namenode.ClusterId'
   },
 
   /**
@@ -247,6 +262,12 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
           var serviceCache = services.findProperty('ServiceInfo.service_name', hostComponent.get('service.serviceName'));
           if (serviceCache) {
             serviceCache.host_components = serviceCache.host_components.without(hostComponent.get('id'));
+          }
+        } else if (id.startsWith('NAMENODE')) {
+          var component = App.HostComponent.find(id),
+            haNameSpace = component.get('haNameSpace');
+          if (component.get('isLoaded') && haNameSpace) {
+            hostComponents.findProperty('id', id).ha_name_space = haNameSpace;
           }
         }
       }, this);
@@ -470,7 +491,13 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
   hdfsMapper: function (item) {
     let finalConfig = jQuery.extend({}, this.config);
     // Change the JSON so that it is easy to map
-    const hdfsConfig = this.hdfsConfig;
+    const hdfsConfig = this.hdfsConfig,
+      activeNameNodeConfig = this.activeNameNodeConfig,
+      activeNameNodeConfigKeys = Object.keys(activeNameNodeConfig),
+      activeNameNodeConfigInitial = activeNameNodeConfigKeys.reduce((obj, key) => Object.assign({}, obj, {
+        [key]: {}
+      }), {});
+    Object.assign(item, activeNameNodeConfigInitial);
     item.components.forEach(component => {
       const hostComponents = component.host_components,
         firstHostComponent = hostComponents[0];
@@ -484,11 +511,11 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
           hostComponents.forEach(hc => {
             const haState = Em.get(hc, 'metrics.dfs.FSNamesystem.HAState'),
               hostName = Em.get(hc, 'HostRoles.host_name'),
-              haNameSpace = Em.get(hc, 'metrics.dfs.namenode.ClusterId'),
+              clusterIdValue = Em.get(hc, 'metrics.dfs.namenode.ClusterId'),
               id = `NAMENODE_${hostName}`;
             switch (haState) {
               case 'active':
-                nameSpacesWithActiveNameNodes.push(haNameSpace);
+                nameSpacesWithActiveNameNodes.push(clusterIdValue);
                 item.active_name_nodes.push(id);
                 break;
               case 'standby':
@@ -497,68 +524,25 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
               default:
                 unknownNameNodes.push({
                   hostName,
-                  haNameSpace
+                  clusterIdValue
                 });
                 break;
             }
+            activeNameNodeConfigKeys.forEach(key => {
+              if (clusterIdValue && (!item[key][clusterIdValue] || haState === 'active')) {
+                item[key][clusterIdValue] = Em.get(hc, activeNameNodeConfig[key]);
+              }
+            });
           });
           unknownNameNodes.forEach(nameNode => {
-            if (nameSpacesWithActiveNameNodes.contains(nameNode.haNameSpace)) {
+            if (nameSpacesWithActiveNameNodes.contains(nameNode.clusterIdValue)) {
               item.standby_name_nodes.push(`NAMENODE_${nameNode.hostName}`);
             }
           });
-        }
-
-        // TODO remove after implementing widgets changes
-        if (hostComponents.length === 2) {
-          const haState1 = Em.get(firstHostComponent, 'metrics.dfs.FSNamesystem.HAState'),
-            haState2 = Em.get(hostComponents[1], 'metrics.dfs.FSNamesystem.HAState'),
-            namenodeName1 = firstHostComponent.HostRoles.host_name,
-            namenodeName2 = hostComponents[1].HostRoles.host_name;
-          let active_name_node = [],
-            standby_name_nodes = [];
-
-          switch (haState1) {
-            case "active":
-              active_name_node.push(namenodeName1);
-              break;
-            case "standby":
-              standby_name_nodes.push(namenodeName1);
-              break;
-          }
-          switch (haState2) {
-            case "active":
-              active_name_node.push(namenodeName2);
-              break;
-            case "standby":
-              standby_name_nodes.push(namenodeName2);
-              break;
-          }
-          item.active_name_node_id = null;
-          item.standby_name_node_id = null;
-          item.standby_name_node2_id = null;
-          switch (active_name_node.length) {
-            case 1:
-              item.active_name_node_id = `NAMENODE_${active_name_node[0]}`;
-              break;
-          }
-          switch (standby_name_nodes.length) {
-            case 0:
-              if (active_name_node.length === 1) {
-                const standbyNameNode =  (active_name_node[0] === namenodeName1) ? namenodeName2 : namenodeName1;
-                item.standby_name_node_id = `NAMENODE_${standbyNameNode}`;
-              }
-              break;
-            case 1:
-              item.standby_name_node_id = `NAMENODE_${standby_name_nodes[0]}`;
-              break;
-            case 2:
-              item.standby_name_node_id = `NAMENODE_${standby_name_nodes[0]}`;
-              item.standby_name_node2_id = `NAMENODE_${standby_name_nodes[1]}`;
-              break;
-          }
-          var activeHostComponentIndex = haState2 == "active" ? 1 : 0;
-          this.setActiveAsFirstHostComponent(component, activeHostComponentIndex);
+        } else {
+          activeNameNodeConfigKeys.forEach(key => {
+            item[key].default = Em.get(firstHostComponent, activeNameNodeConfig[key]);
+          });
         }
 
         item.nameNodeComponent = component;
@@ -586,10 +570,10 @@ App.serviceMetricsMapper = App.QuickDataMapper.create({
         }
         item.name_node_id = `NAMENODE_${firstHostComponent.HostRoles.host_name}`;
       }
-      if (this.isHostComponentPresent(component, "JOURNALNODE")) {
+      if (this.isHostComponentPresent(component, 'JOURNALNODE')) {
         item.journal_nodes = hostComponents.map(hc => `JOURNALNODE_${hc.HostRoles.host_name}`);
       }
-      if (this.isHostComponentPresent(component, "SECONDARY_NAMENODE")) {
+      if (this.isHostComponentPresent(component, 'SECONDARY_NAMENODE')) {
         item.sname_node_id = `SECONDARY_NAMENODE_${firstHostComponent.HostRoles.host_name}`;
       }
     });

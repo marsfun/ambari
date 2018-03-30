@@ -216,13 +216,23 @@ describe('App.QuickViewLinks', function () {
     beforeEach(function () {
       sinon.stub(App.HostComponent, 'find').returns([
         Em.Object.create({
-          isMaster: true,
+          componentName: 'HBASE_MASTER',
           hostName: 'host1'
         })
+      ]);
+      sinon.stub(App.QuickLinksConfig, 'find').returns([
+        {
+          links: [
+            {
+              component_name: 'HBASE_MASTER'
+            }
+          ]
+        }
       ]);
     });
     afterEach(function () {
       App.HostComponent.find.restore();
+      App.QuickLinksConfig.find.restore();
     });
     it("call $.ajax", function () {
       quickViewLinks.getQuickLinksHosts();
@@ -231,7 +241,7 @@ describe('App.QuickViewLinks', function () {
       expect(args[0].sender).to.be.eql(quickViewLinks);
       expect(args[0].data).to.be.eql({
         clusterName: App.get('clusterName'),
-        masterHosts: 'host1',
+        hosts: 'host1',
         urlParams: ''
       });
     });
@@ -243,7 +253,7 @@ describe('App.QuickViewLinks', function () {
       expect(args[0].sender).to.be.eql(quickViewLinks);
       expect(args[0].data).to.be.eql({
         clusterName: App.get('clusterName'),
-        masterHosts: 'host1',
+        hosts: 'host1',
         urlParams: ',host_components/metrics/hbase/master/IsActiveMaster'
       });
     });
@@ -839,6 +849,28 @@ describe('App.QuickViewLinks', function () {
       });
     });
   });
+
+  describe('#resolvePlaceholders', function() {
+    beforeEach(function() {
+      quickViewLinks.setProperties({
+      configProperties: [{
+          'type': 'config-type1',
+          'properties': {'property1': 'value1'}
+        }],
+        actualTags: [""],
+        quickLinks: [{}]
+      });
+    }),
+    it("replaces placeholders from config", function () {
+      expect(quickViewLinks.resolvePlaceholders('${config-type1/property1}')).to.equal('value1');
+    }),
+    it("leaves url as it is if config-type was not found", function () {
+      expect(quickViewLinks.resolvePlaceholders('${unknown-config-type/property1}')).to.equal('${unknown-config-type/property1}');
+    }),
+    it("leaves url as it is if property was not found", function () {
+      expect(quickViewLinks.resolvePlaceholders('${config-type1/unknown-property}')).to.equal('${config-type1/unknown-property}');
+    })
+  }),
 
   describe('#setPort', function () {
     var testData = [

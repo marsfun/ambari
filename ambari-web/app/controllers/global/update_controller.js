@@ -196,6 +196,7 @@ App.UpdateController = Em.Controller.extend({
         App.updater.run(this, 'updateUnhealthyAlertInstances', 'updateAlertInstances', App.alertInstancesUpdateInterval, '\/main\/alerts.*');
       }
       App.updater.run(this, 'updateWizardWatcher', 'isWorking', App.bgOperationsUpdateInterval);
+      App.updater.run(this, 'updateHDFSNameSpaces', 'isWorking', App.componentsUpdateInterval, '\/main\/(dashboard|services\/HDFS|hosts).*');
     }
   }.observes('isWorking', 'App.router.mainAlertInstancesController.isUpdating'),
 
@@ -224,7 +225,7 @@ App.UpdateController = Em.Controller.extend({
         realUrl = '/hosts?fields=Hosts/rack_info,Hosts/host_name,Hosts/maintenance_state,Hosts/public_host_name,Hosts/cpu_count,Hosts/ph_cpu_count,Hosts/last_agent_env,' +
             'alerts_summary,Hosts/host_status,Hosts/host_state,Hosts/last_heartbeat_time,Hosts/ip,host_components/HostRoles/state,host_components/HostRoles/maintenance_state,' +
             'host_components/HostRoles/stale_configs,host_components/HostRoles/service_name,host_components/HostRoles/display_name,host_components/HostRoles/desired_admin_state,' +
-            (App.Service.find().someProperty('serviceName', 'HDFS') ? 'host_components/metrics/dfs/namenode/ClusterId,host_components/metrics/dfs/FSNamesystem/HAState,' : '') +
+            (App.Service.find().someProperty('serviceName', 'HDFS') ? 'host_components/metrics/dfs/namenode/ClusterId,host_components/metrics/dfs/FSNamesystem/HAState,host_components/metrics/jvm/HeapMemoryMax,host_components/metrics/jvm/HeapMemoryUsed,host_components/metrics/dfs/FSNamesystem/CapacityUsed,host_components/metrics/dfs/FSNamesystem/CapacityTotal,host_components/metrics/dfs/FSNamesystem/CapacityRemaining,host_components/metrics/dfs/FSNamesystem/CapacityNonDFSUsed,host_components/metrics/rpc/client/RpcQueueTime/avg_time,host_components/metrics/runtime/StartTime,' : '') +
             '<metrics>Hosts/total_mem<hostDetailsParams><stackVersions>&minimal_response=true',
         hostDetailsParams = ',Hosts/os_arch,Hosts/os_type,metrics/cpu/cpu_system,metrics/cpu/cpu_user,metrics/memory/mem_total,metrics/memory/mem_free',
         stackVersionInfo = ',stack_versions/HostStackVersions,' +
@@ -681,5 +682,50 @@ App.UpdateController = Em.Controller.extend({
   updateLoggingSuccess: function(data, opt, params) {
     var clbk = params.callback || function() {};
     clbk(data);
+  },
+
+  updateHDFSNameSpaces: function () {
+    if (App.Service.find().someProperty('serviceName', 'HDFS') && App.get('isHaEnabled')) {
+      const siteName = 'hdfs-site',
+        storedHdfsSiteconfigs = App.db.getConfigs().findProperty('type', siteName),
+        tagName = storedHdfsSiteconfigs && storedHdfsSiteconfigs.tag;
+      App.router.get('configurationController').getConfigsByTags([{
+        siteName,
+        tagName
+      }]).done(configs => {
+        const properties = configs && configs[0] && configs[0].properties;
+        if (properties) {
+          const nameSpaceProperty = properties['dfs.nameservices'];
+          if (nameSpaceProperty) {
+            const nameSpaces = nameSpaceProperty.split(',').map(nameSpace => {
+                const nameNodeIdsProperty = properties[`dfs.ha.namenodes.${nameSpace}`];
+                if (nameNodeIdsProperty) {
+                  const nameNodeIds = nameNodeIdsProperty.split(','),
+                    hostNames = nameNodeIds.map(id => {
+                      const propertyValue = properties[`dfs.namenode.http-address.${nameSpace}.${id}`],
+                        matches = propertyValue && propertyValue.match(/([\D\d]+)\:\d+$/),
+                        hostName = matches && matches[1];
+                      return hostName;
+                    });
+                  return {
+                    nameSpace,
+                    hostNames
+                  };
+                }
+              }),
+              allNameNodes = App.HDFSService.find().objectAt(0).get('hostComponents').filterProperty('componentName', 'NAMENODE');
+            allNameNodes.forEach(component => {
+              const nameSpaceObject = nameSpaces.find(ns => ns && ns.hostNames && ns.hostNames.contains(component.get('hostName')));
+              if (nameSpaceObject) {
+                component.set('haNameSpace', nameSpaceObject.nameSpace);
+              }
+            });
+            App.set('router.clusterController.isHDFSNameSpacesLoaded', true);
+          }
+        }
+      })
+    } else {
+      App.set('router.clusterController.isHDFSNameSpacesLoaded', true);
+    }
   }
 });

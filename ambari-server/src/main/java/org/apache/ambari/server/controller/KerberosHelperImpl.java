@@ -588,8 +588,6 @@ public class KerberosHelperImpl implements KerberosHelper {
           configurations.put("clusterHostInfo", clusterHostInfoMap);
         }
 
-        Map<String, String> componentToClusterInfoMap = StageUtils.getComponentToClusterInfoKeyMap();
-
         // Iterate through the recommendations to find the recommended host assignments
         for (RecommendationResponse.HostGroup hostGroup : hostGroups) {
           Set<Map<String, String>> components = hostGroup.getComponents();
@@ -607,13 +605,7 @@ public class KerberosHelperImpl implements KerberosHelper {
                   // If the component filter is null or the current component is found in the filter,
                   // include it in the map
                   if ((componentFilter == null) || componentFilter.contains(componentName)) {
-                    String key = componentToClusterInfoMap.get(componentName);
-
-                    if (StringUtils.isEmpty(key)) {
-                      // If not found in the componentToClusterInfoMap, then keys are assumed to be
-                      // in the form of <component_name>_hosts (lowercase)
-                      key = componentName.toLowerCase() + "_hosts";
-                    }
+                    String key = StageUtils.getClusterHostInfoKey(componentName);
 
                     Set<String> fqdns = new TreeSet<>();
 
@@ -730,6 +722,25 @@ public class KerberosHelperImpl implements KerberosHelper {
 
         if (visitedStacks.contains(stackId)) {
           continue;
+        }
+
+        for (Map.Entry<String, Map<String, Map<String, String>>> config : requestConfigurations.entrySet()) {
+          for (Map<String, String> properties : config.getValue().values()) {
+            for (Map.Entry<String, String> property : properties.entrySet()) {
+              String oldValue = property.getValue();
+              String updatedValue = variableReplacementHelper.replaceVariables(property.getValue(), existingConfigurations);
+              if (!StringUtils.equals(oldValue, updatedValue) && !config.getKey().isEmpty()) {
+                property.setValue(updatedValue);
+                if (kerberosConfigurations.containsKey(config.getKey())) {
+                  kerberosConfigurations.get(config.getKey()).put(property.getKey(), updatedValue);
+                } else {
+                  Map kerberosConfigProperties = new HashMap<>();
+                  kerberosConfigProperties.put(property.getKey(), updatedValue);
+                  kerberosConfigurations.put(config.getKey(), kerberosConfigProperties);
+                }
+              }
+            }
+          }
         }
 
         StackAdvisorRequest request = StackAdvisorRequest.StackAdvisorRequestBuilder
